@@ -14,7 +14,7 @@ function! ToggleEnterMapping()
   endif
 endfunction
 call ToggleEnterMapping()
-inoremap <expr> <S-CR> ToggleEnterMapping()
+inoremap <expr> <F12> ToggleEnterMapping()
 " Optional (so <CR> cancels prefix, selection, operator).
 " nnoremap <CR> <Esc>
 " vnoremap <CR> <Esc>gV
