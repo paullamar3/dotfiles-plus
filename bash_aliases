@@ -10,3 +10,11 @@ Zcntsh() #@ USAGE Zcntsh [path]
 {
   gnome-terminal --profile=container --title "Container $(date +%H%M%S)" --working-directory "${1:-$PWD}"
 }
+
+Zgitst() #@ Usage Zgitst [path]  TODO: Add support to accept path as argument.
+{
+  for f in ~/Repositories/*
+  do
+     [ -d $f ] && cd "$f" && printf "%b" "\n\n------\n$( pwd )\n" && git status
+  done
+}
