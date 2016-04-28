@@ -115,7 +115,7 @@ fi
 
 # Copy the file to the current working directory.
 set -vx
-curl -o "${FILE##*/}" "$HUB$ME/$REPO/$FILE" 
+curl -o "${FILE##*/}" "$HUB$ME/$REPO/$BRANCH/$FILE" 
 set +vx
 
 # If we are downloading an executable move it to the 
