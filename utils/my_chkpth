@@ -1,0 +1,121 @@
+#!/bin/bash
+
+## A utility for checking if a path is already contained in
+## the PATH environment variable. Options are provided to add
+## the path if it isn't found.
+
+
+my_chkpth ( )
+{ 
+
+local USAGE ADD_PATH ADD_LOGIN MKDIR SPATH opt OPTIND
+
+USAGE="my_chkpth  [-h] [-a] [-l] [-m] PATH
+
+This function checks if PATH is contained in the \$PATH
+environment variable. If it is it returns 0; if not it returns 1.
+
+	-h	Print this message.
+
+	-a	If the path is not found then add it to the end
+		of \$PATH and return 0.
+	
+	-l	If the path is not found then add it the
+		bash login file and return 0.
+	
+	PATH	The path to find.
+"
+
+# Set default values for options.
+ADD_PATH=""
+ADD_LOGIN=""
+MKDIR=""
+
+# Parse any options
+while getopts ":halm" opt; do
+	case $opt in
+		h)
+			echo "$USAGE"
+			return 0
+			;;
+		a)
+			ADD_PATH="y"
+			;;
+		l)
+			ADD_LOGIN="y"
+			;;
+		m)
+			MKDIR="y"
+			;;
+		\?)
+			echo "Invalid option: -$OPTARG" >&2
+			return 1
+			;;
+		:)
+			echo "Option -$OPTARG requires an argument." >&2
+			return 1
+			;;
+	esac
+done
+
+shift $(( OPTIND - 1 ))
+
+SPATH=$1
+
+# Check that SPATH is not null.
+if [ -z "$SPATH" ]; then
+	echo "Must provide a path to check." >&2
+	echo "$USAGE"
+	return 1
+fi
+
+echo Looking for $SPATH.
+
+# If SPATH is in PATH then removing it will change the string.
+# Note that if we find SPATH in the environment already we assume
+# that the path is valid and that it is already part of the login.
+if [ ! "$PATH" = "${PATH//$SPATH/''}" ]; then 
+	echo "Path found."
+	return 0
+fi
+
+# Now we know that SPATH is not in our current path.
+
+# Test if the path is valid.
+if [ ! -d "$SPATH" ]; then
+	echo "$SPATH does not exist."
+	if [ "$MKDIR" = "y" ]; then
+		echo "Making the directory."
+		mkdir "$SPATH"
+	else
+		return 1
+	fi
+fi
+
+# Add $SPATH to $PATH if requested.
+if [ "$ADD_PATH" = "y" ]; then
+	PATH=$PATH:$SPATH
+	echo Path added.
+fi
+
+# Add $SPATH to login script if requested.
+if [ "$ADD_LOGIN" = "y" ]; then
+	if [ -f ~/.bash_login ]; then
+		echo "\$PATH=\$PATH:$SPATH" >> ~/.bash_login
+	elif [ -f ~/.bash_profile ]; then
+		echo "\$PATH=\$PATH:$SPATH" >> ~/.bash_profile
+	elif [ -f ~/.profile ]; then
+		echo "\$PATH=\$PATH:$SPATH" >> ~/.profile
+	else
+		echo "Could not find the bash login file." >&2
+		return 1
+	fi
+
+	return 0
+fi
+
+# Return a 1 to indicate that $SPATH is not in $PATH.
+return 1
+
+}
+

@@ -1,0 +1,117 @@
+#!/bin/bash
+
+## A utility for quickly pulling down files from my repositories.
+
+set -e
+
+USAGE="$(basename "$0") [-h] [-x] [-f]
+        [-b BRANCH] 
+        [-r REPO] 
+        FILE
+
+This script wraps the 'curl' command as a convenience for 
+retrieving files from my repositories.
+
+     -h         Displays this help message.
+
+     -b BRANCH  The branch in the repository from which we will pull.
+                Defaults to 'master'.
+
+     -r REPO    The name of the repository from which we pull. 
+                Defaults to 'dotfiles-plus'.
+
+     -f         Forcefully overwrite any existing file.
+
+     -x         Install into '.my_bins' as an executable
+
+     FILE       The file to retrieve.
+
+This script was writen to provide a quick and easy way to pull in files
+from my 'dotfiles-plus' repository on GitHub. Thus the options for 
+choosing a branch or even changing the repository. Much of the time
+I will be pulling down shell scripts that I want to use as commands.
+Specifying the '-x' option communicates this intent. When '-x' is 
+specified the retrieved script will be placed in the '~/.mybins'
+directory and marked as an executable. Otherwise the file will
+simply be written to the current directory.
+
+This uses the 'my_chkpth' function to ensure that '~./my_bins'
+is in the \$PATH before trying to install any executable
+scripts.
+
+"
+
+
+# Set up default values for all the options.
+MKEXEC="" 
+FORCE=""
+BRANCH="master"
+REPO="dotfiles-plus"
+FILE=""
+ME="paullamar3"
+HUB="https://raw.githubusercontent.com/"
+DEST="$PWD"
+
+# Parse any option
+while getopts ":hfxb:r:" opt; do
+     case $opt in 
+	     h)
+		     echo "$USAGE"
+		     exit
+		     ;;
+	     f)
+		     FORCE="y"
+		     ;;
+	     x)
+		     MKEXEC="y"
+		     ;;
+	     b)
+		     BRANCH="$OPTARG"
+		     ;;
+	     r)
+		     REPO="$OPTARG"
+		     ;;
+	     \?)
+		     echo "Invalid option: -$OPTARG" >&2
+		     exit 1
+		     ;;
+	     :)
+		     echo "Option -$OPTARG requires an argument." >&2
+		     exit 1
+		     ;;
+     esac
+done
+
+if [ "$MKEXEC" = "y" ]; then
+	if [ -z $( declare -F | grep my_chkpth) ]; then 
+		echo "No 'my_chkpth' function."
+		return 1
+	fi
+
+	# This will check that there is a '.my_bins' directory
+	# and create it if there is not.
+	my_chkpth -alm ~/.my_bins
+
+fi
+
+# Check if the file already exists.
+if [ -f "$DEST/${FILE##*/}" ]; then
+	echo "$DEST/${FILE##*/} already exists."
+	if [ $FORCE = "y" ]; then
+		echo "Overwriting file."
+	else
+		return 1
+	fi
+fi
+
+# Copy the file to the current working directory.
+curl -o "${FILE##*/}" "$HUB$ME/$REPO/$FILE" 
+
+# If we are downloading an executable move it to the 
+# ~/.my_bins directory and set the executable attribute.
+if [ "$MKEXEC" = "y" ]; then
+	mv "${FILE##/*}" ~/.my_bins/
+	chmod +x "~/.my_bins/${FILE##*/}"
+fi
+
+return 0
